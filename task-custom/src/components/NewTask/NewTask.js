@@ -1,41 +1,29 @@
-import { useState } from 'react';
-
-import Section from '../UI/Section';
-import TaskForm from './TaskForm';
+import useHttp from "../../hooks/use-http";
+import Section from "../UI/Section";
+import TaskForm from "./TaskForm";
 
 const NewTask = (props) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { sendRequest, isLoading, error } = useHttp();
 
-  const enterTaskHandler = async (taskText) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        'https://react-1bc4c-default-rtdb.asia-southeast1.firebasedatabase.app/tasks.json',
-        {
-          method: 'POST',
-          body: JSON.stringify({ text: taskText }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+  const formatData = (taskText, data) => {
+    const generatedId = data.name; // firebase-specific => "name" contains generated id
+    const createdTask = { id: generatedId, text: taskText };
+    props.onAddTask(createdTask);
+  };
 
-      if (!response.ok) {
-        throw new Error('Request failed!');
-      }
+  const enterTaskHandler = (taskText) => {
+    sendRequest(
+      {
+        url: "https://react-1bc4c-default-rtdb.asia-southeast1.firebasedatabase.app/tasks.json",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: taskText }),
+      },
+      formatData.bind(null, taskText)
+    );
 
-      const data = await response.json();
-
-      const generatedId = data.name; // firebase-specific => "name" contains generated id
-      const createdTask = { id: generatedId, text: taskText };
-
-      props.onAddTask(createdTask);
-    } catch (err) {
-      setError(err.message || 'Something went wrong!');
-    }
-    setIsLoading(false);
   };
 
   return (
